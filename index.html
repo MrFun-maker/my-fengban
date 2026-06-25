@@ -1,0 +1,615 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>均衡分班系统 - 拖拽配置版</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:#f0f4f8;color:#1a2332;line-height:1.6;min-height:100vh}
+.header{background:linear-gradient(135deg,#1a365d,#2a4a7f);color:#fff;padding:20px 32px}
+.header h1{font-size:22px;font-weight:700}
+.header p{font-size:13px;opacity:.8;margin-top:2px}
+.container{max-width:1440px;margin:0 auto;padding:16px 24px}
+.panel{background:#fff;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:16px;overflow:hidden}
+.panel-hd{padding:14px 20px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
+.panel-bd{padding:20px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.grid-2{grid-template-columns:1fr}}
+.upload-zone{border:2px dashed #cbd5e1;border-radius:8px;padding:32px 20px;text-align:center;cursor:pointer;transition:all .2s;background:#fafbfc}
+.upload-zone:hover{border-color:#3b82f6;background:#eff6ff}
+.upload-zone.has-file{border-color:#22c55e;background:#f0fdf4}
+.upload-zone .icon{font-size:40px;color:#94a3b8;margin-bottom:6px}
+.upload-zone .t{font-size:14px;color:#475569}
+.upload-zone .st{font-size:12px;color:#94a3b8;margin-top:2px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border:none;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s}
+.btn-primary{background:#1e40af;color:#fff}
+.btn-primary:hover{background:#1e3a8a}
+.btn-primary:disabled{background:#93a9d8;cursor:not-allowed}
+.btn-success{background:#16a34a;color:#fff}
+.btn-success:hover{background:#15803d}
+.btn-outline{background:transparent;border:1px solid #d1d5db;color:#374151}
+.btn-outline:hover{background:#f3f4f6}
+.btn-sm{padding:5px 10px;font-size:12px}
+.table-wrap{overflow-x:auto;margin-top:10px}
+table.dt{width:100%;border-collapse:collapse;font-size:12px}
+table.dt th{background:#f1f5f9;padding:8px 10px;text-align:left;border-bottom:2px solid #e2e8f0;font-weight:600;white-space:nowrap}
+table.dt td{padding:6px 10px;border-bottom:1px solid #f1f5f9}
+table.dt tr:hover td{background:#f8fafc}
+.badge{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:500}
+.badge-b{background:#dbeafe;color:#1d4ed8}
+.badge-g{background:#dcfce7;color:#15803d}
+.badge-o{background:#fed7aa;color:#9a3412}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px}
+.stat-c{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px;text-align:center}
+.stat-c .v{font-size:24px;font-weight:700;color:#1e40af}
+.stat-c .l{font-size:11px;color:#64748b;margin-top:1px}
+.tabs{display:flex;gap:2px;border-bottom:2px solid #e2e8f0;margin-bottom:12px;flex-wrap:wrap}
+.tab{padding:6px 14px;cursor:pointer;font-size:13px;color:#64748b;border-bottom:2px solid transparent;margin-bottom:-2px}
+.tab:hover{color:#1e40af}
+.tab.active{color:#1e40af;border-bottom-color:#1e40af;font-weight:600}
+.tab-c{display:none}
+.tab-c.active{display:block}
+.loading{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:999;align-items:center;justify-content:center}
+.loading.show{display:flex}
+.loading-box{background:#fff;border-radius:12px;padding:28px 36px;text-align:center}
+.spin{width:36px;height:36px;border:4px solid #e2e8f0;border-top-color:#1e40af;border-radius:50%;animation:s .8s linear infinite;margin:0 auto 12px}
+@keyframes s{to{transform:rotate(360deg)}}
+.flex{display:flex}
+.flex-b{display:flex;justify-content:space-between;align-items:center}
+.gap-8{gap:8px}
+.mt-12{margin-top:12px}
+.mb-12{margin-bottom:12px}
+.txt-c{text-align:center}
+.bar-c{margin:8px 0}
+.bar-r{display:flex;align-items:center;margin-bottom:3px;font-size:12px}
+.bar-l{width:50px;text-align:right;padding-right:6px;font-weight:500;flex-shrink:0}
+.bar-t{flex:1;height:18px;background:#e2e8f0;border-radius:4px;overflow:hidden}
+.bar-f{height:100%;border-radius:4px;transition:width .5s}
+.bar-v{margin-left:6px;font-size:11px;white-space:nowrap}
+.cls-c{border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;padding:10px}
+.cls-st{display:grid;padding:8px 10px;font-size:11px;color:#475569;background:#fafbfc;border-bottom:1px solid #e2e8f0}
+.cls-st span{text-align:center}
+.cls-st strong{display:block;font-size:14px;color:#1e40af}
+/* Slider table */
+.slider-wrap{overflow-x:auto;margin:12px 0}
+.slider-table{border-collapse:collapse;font-size:12px;width:100%;min-width:600px}
+.slider-table th{background:#f1f5f9;padding:6px 8px;text-align:center;border-bottom:2px solid #e2e8f0;font-weight:600;white-space:nowrap}
+.slider-table td{padding:4px 6px;text-align:center;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+.slider-table .cls-name{font-weight:600;font-size:13px;white-space:nowrap}
+.slider-table input[type=range]{width:100%;min-width:80px;margin:0;vertical-align:middle}
+.slider-table .sv{font-size:11px;color:#475569;min-width:36px;display:inline-block}
+.slider-table .av{font-size:11px;color:#16a34a;min-width:36px;display:inline-block}
+.slider-table .dv{font-size:11px;color:#dc2626;min-width:36px;display:inline-block}
+.slider-table tr:hover td{background:#f8fafc}
+.slider-cell{display:flex;align-items:center;gap:4px;justify-content:center}
+.constraint-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;background:#e9d5ff;color:#7c3aed;font-weight:500}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>均衡分班系统</h1>
+  <p>Excel数据导入 · 拖拽配置各班目标 · 自动分班</p>
+</div>
+<div class="container">
+<div class="grid-2">
+  <div class="panel">
+    <div class="panel-hd">📂 导入学生数据</div>
+    <div class="panel-bd">
+      <div class="upload-zone" id="uz">
+        <div class="icon">📄</div>
+        <div class="t">点击上传或拖拽 Excel 文件</div>
+        <div class="st">支持 .xlsx/.xls，须含姓名、性别、人员类型、各科成绩、总分</div>
+        <input type="file" id="fi" accept=".xlsx,.xls" style="display:none">
+      </div>
+      <div class="file-info" id="fi2"></div>
+      <div class="flex gap-8 mt-12">
+        <button class="btn btn-outline btn-sm" onclick="loadSample()">📊 加载示例数据</button>
+        <button class="btn btn-outline btn-sm" onclick="location.reload()">🔄 重置</button>
+      </div>
+      <div class="table-wrap" id="pw" style="display:none">
+        <table class="dt" id="pt"><thead><tr id="ph"></tr></thead><tbody id="pb"></tbody></table>
+        <div class="txt-c" style="font-size:12px;color:#94a3b8;margin-top:4px">
+          共 <span id="tc">0</span> 名学生 | 科目: <span id="subjNames"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-hd">🎯 目标配置</div>
+    <div class="panel-bd">
+      <div class="flex gap-8" style="margin-bottom:12px">
+        <div style="flex:1">
+          <label style="font-size:13px;font-weight:500;color:#374151">班级数量</label>
+          <input type="number" id="cc" value="7" min="2" max="20" onchange="generateSliders()" style="width:100%;padding:7px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:14px;margin-top:4px">
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:6px">
+          <button class="btn btn-outline btn-sm" onclick="resetSliders()">↺ 均分</button>
+          <button class="btn btn-outline btn-sm" onclick="generateSliders()">⟳ 刷新</button>
+        </div>
+      </div>
+      <div class="slider-wrap" id="sliderWrap" style="display:none">
+        <table class="slider-table" id="sliderTable">
+          <thead id="sliderHead"></thead>
+          <tbody id="sliderBody"></tbody>
+        </table>
+      </div>
+      <button class="btn btn-primary mt-12" id="rb" onclick="run()" disabled>▶ 执行分班</button>
+    </div>
+  </div>
+</div>
+<div class="panel" id="rp" style="display:none">
+  <div class="panel-hd flex-b">
+    <span>📋 分班结果</span>
+    <div class="flex gap-8">
+      <button class="btn btn-success btn-sm" onclick="exportXLSX()">📥 导出 Excel</button>
+    </div>
+  </div>
+  <div class="panel-bd">
+    <div class="stats-grid" id="os"></div>
+    <div class="grid-2 mb-12">
+      <div class="cls-c"><div style="font-size:13px;font-weight:600;margin-bottom:6px">各班总分平均分对比</div><div id="chartTotal"></div></div>
+      <div class="cls-c"><div style="font-size:13px;font-weight:600;margin-bottom:6px">各班人数分布</div><div id="chartCount"></div></div>
+    </div>
+    <div style="margin-bottom:8px;font-size:13px;font-weight:600">各科平均分对比</div>
+    <div id="subjChartContainer" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-bottom:16px"></div>
+    <div class="tabs" id="cts"></div>
+    <div id="ccontent"></div>
+  </div>
+</div>
+</div>
+<div class="loading" id="lo">
+  <div class="loading-box">
+    <div class="spin"></div>
+    <div style="font-size:15px;font-weight:500">分班计算中...</div>
+  </div>
+</div>
+<script>
+let students=[];
+let result=null;
+let subjectKeys=[];
+let sliderVals={};
+const TYPE_NAMES=['本市','积分达标','积分不达标'];
+const COL_ALIASES={name:['姓名','名字','学生','学生姓名','Name','name'],gender:['性别','Gender','gender'],type:['人员类型','儿童人员类型','类型','生源类型','生源','Type','type','类别','学生类型','学生类别']};
+function isTotalKey(k){return /总分|总成绩|Total|total|合计|总计/.test(k)}
+
+const uz=document.getElementById('uz'),fi=document.getElementById('fi');
+uz.addEventListener('click',()=>fi.click());
+uz.addEventListener('dragover',e=>{e.preventDefault();uz.style.borderColor='#2563eb';uz.style.background='#dbeafe'});
+uz.addEventListener('dragleave',()=>{uz.style.borderColor='#cbd5e1';uz.style.background='#fafbfc'});
+uz.addEventListener('drop',e=>{e.preventDefault();uz.style.borderColor='#cbd5e1';uz.style.background='#fafbfc';if(e.dataTransfer.files.length)handleFile(e.dataTransfer.files[0])});
+fi.addEventListener('change',e=>{if(e.target.files.length)handleFile(e.target.files[0])});
+
+function handleFile(file){
+  const ext=file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+  if(!['.xlsx','.xls'].includes(ext)){alert('请上传 .xlsx 或 .xls 格式');return}
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const data=new Uint8Array(e.target.result);
+      const wb=XLSX.read(data,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const json=XLSX.utils.sheet_to_json(ws,{defval:''});
+      parseData(json,file.name);
+    }catch(err){alert('解析失败：'+err.message)}
+  };
+  reader.readAsArrayBuffer(file);
+}
+function parseData(raw,fileName){
+  if(!raw.length){alert('文件中没有数据');return}
+  const keys=Object.keys(raw[0]),colIdx={};
+  for(const[field,aliases]of Object.entries(COL_ALIASES))
+    for(const key of keys){if(aliases.some(a=>key.includes(a))){colIdx[field]=key;break}}
+  if(!colIdx.name){alert('未找到"姓名"列');return}
+  let totalKey=keys.find(k=>isTotalKey(k));
+  subjectKeys=keys.filter(k=>{
+    if(k===colIdx.name||k===colIdx.gender||k===colIdx.type||k===totalKey)return false;
+    if(isTotalKey(k))return false;
+    if(/^\d+$/.test(k))return false;
+    const nums=raw.filter(r=>r[k]!==''&&r[k]!==null&&!isNaN(parseFloat(r[k])));
+    return nums.length>raw.length*0.5;
+  });
+  students=raw.map((row,i)=>{
+    const s={id:i+1,name:String(row[colIdx.name]||'').trim(),subjects:{},totalScore:0};
+    subjectKeys.forEach(k=>{s.subjects[k]=parseFloat(row[k])||0});
+    s.totalScore=totalKey?(parseFloat(row[totalKey])||0):subjectKeys.reduce((sum,k)=>sum+s.subjects[k],0);
+    s.gender=colIdx.gender?String(row[colIdx.gender]||'').trim():'';
+    if(['男','男性','M','m','male','Male','男生'].includes(s.gender))s.gender='男';
+    else if(['女','女性','F','f','female','Female','女生'].includes(s.gender))s.gender='女';
+    else s.gender='';
+    s.type=colIdx.type?String(row[colIdx.type]||'').trim():'';
+    if(!TYPE_NAMES.includes(s.type)){
+      if(s.type.includes('本市')||s.type.includes('本地'))s.type='本市';
+      else if(s.type.includes('积分不达标')||s.type.includes('不达标')||s.type.includes('未达标'))s.type='积分不达标';
+      else if(s.type.includes('积分达标')||s.type.includes('达标')||s.type.includes('积分达'))s.type='积分达标';
+    }
+    return s;
+  }).filter(s=>s.name&&s.name!=='undefined');
+  showPreview(fileName);
+  document.getElementById('rb').disabled=false;
+  if(students.length)generateSliders();
+}
+
+function showPreview(fileName){
+  document.getElementById('fi2').textContent='✅ '+fileName+'（'+students.length+' 名）';
+  document.getElementById('fi2').classList.add('show');
+  uz.classList.add('has-file');
+  document.getElementById('pw').style.display='block';
+  document.getElementById('tc').textContent=students.length;
+  document.getElementById('subjNames').textContent=subjectKeys.join('、')||'（自动检测）';
+  const head=document.getElementById('ph');
+  head.innerHTML='<th>#</th><th>姓名</th><th>性别</th><th>人员类型</th>'+subjectKeys.map(k=>'<th>'+k+'</th>').join('')+'<th>总分</th>';
+  const body=document.getElementById('pb');
+  body.innerHTML=students.slice(0,30).map((s,i)=>{
+    const tb={'本市':'badge badge-b','积分达标':'badge badge-g','积分不达标':'badge badge-o'}[s.type]||'';
+    return '<tr><td>'+(i+1)+'</td><td>'+s.name+'</td><td>'+s.gender+'</td><td>'+(tb?'<span class="'+tb+'">'+s.type+'</span>':s.type)+'</td>'+subjectKeys.map(k=>'<td>'+s.subjects[k].toFixed(1)+'</td>').join('')+'<td><strong>'+s.totalScore.toFixed(1)+'</strong></td></tr>';
+  }).join('');
+  if(students.length>30)
+    body.innerHTML+='<tr><td colspan="'+(3+subjectKeys.length+1)+'" class="txt-c" style="color:#94a3b8;font-size:12px">...仅显示前30条，共'+students.length+'条</td></tr>';
+}
+function loadSample(){
+  const ln=['张','李','王','刘','陈','杨','赵','黄','周','吴','徐','孙','胡','朱','高','林','何','郭','马','罗','梁','宋','郑','谢','韩','唐','冯','于','董','程','曹','袁','邓','许','傅','沈','曾','彭','吕','苏','卢','蒋','蔡','贾','丁','魏','薛','叶','阎','余','潘','杜','戴','夏','钟','汪','田','任','姜','范','方','石','姚','谭','廖','邹','熊','金','陆','郝','孔','白','崔','康','毛','邱','秦','江','史','顾','侯','邵','孟','龙','万','段','钱','汤'];
+  const fn=['伟','芳','娜','秀英','敏','静','丽','强','磊','军','洋','勇','艳','杰','娟','涛','超','明','雪','宁','琳','鹏','飞','鑫','浩','宇','轩','雨','晨','蕾','雯','婷','悦','欣','颖','慧','文','博','智','辉','亮','威','健','刚','峰','俊','帅','平','海'];
+  const genders=['男','女'],types=['本市','积分达标','积分不达标'],subjNames=['语文','数学','英语','科学'];
+  const sample=[];
+  for(let i=0;i<180;i++){
+    const gender=genders[Math.random()<0.5?0:1];
+    const tr=Math.random(),type=tr<0.40?'本市':tr<0.75?'积分达标':'积分不达标';
+    const subjects={};
+    subjNames.forEach(sk=>{subjects[sk]=Math.round((Math.random()*50+50)*10)/10});
+    const total=subjNames.reduce((s,sk)=>s+subjects[sk],0);
+    const name=ln[Math.floor(Math.random()*ln.length)]+fn[Math.floor(Math.random()*fn.length)];
+    const row={姓名:name,性别:gender,人员类型:type};
+    subjNames.forEach(sk=>{row[sk]=subjects[sk]});
+    row['总分']=Math.round(total*10)/10;
+    sample.push(row);
+  }
+  parseData(sample,'示例数据.xlsx');
+}
+
+// ---- Slider generation ----
+function generateSliders(){
+  if(!students.length)return;
+  const n=parseInt(document.getElementById('cc').value)||7;
+  document.getElementById('sliderWrap').style.display='block';
+
+  // Calculate overall stats for defaults
+  const totalMale=students.filter(s=>s.gender==='男').length;
+  const overallMaleRatio=totalMale/students.length;
+  const baseSize=Math.floor(students.length/n);
+  const extraCount=students.length%n;
+  const targetSize=Array.from({length:n},(_,i)=>i<extraCount?baseSize+1:baseSize);
+
+  const overallTotalAvg=students.reduce((s,st)=>s+st.totalScore,0)/students.length;
+  const overallSubjAvg={};
+  subjectKeys.forEach(k=>{overallSubjAvg[k]=students.reduce((s,st)=>s+st.subjects[k],0)/students.length});
+
+  // Score range for slider bounds
+  const minTotal=Math.min(...students.map(s=>s.totalScore));
+  const maxTotal=Math.max(...students.map(s=>s.totalScore));
+  const minSubj={},maxSubj={};
+  subjectKeys.forEach(k=>{minSubj[k]=Math.min(...students.map(s=>s.subjects[k]));maxSubj[k]=Math.max(...students.map(s=>s.subjects[k]))});
+
+  // Generate header
+  const head=document.getElementById('sliderHead');
+  const totalNT=students.filter(s=>s.type==='积分不达标').length;
+  const overallNtPct=Math.round(totalNT/students.length*100);
+  head.innerHTML='<th>班级</th><th>男占比</th><th>积不达标%</th>'+subjectKeys.map(k=>'<th>'+k+'均分</th>').join('')+'<th>总分均分</th>';
+
+  // Generate rows
+  const body=document.getElementById('sliderBody');
+  body.innerHTML=Array.from({length:n},(_,i)=>{
+    const rowId='row_'+i;
+    // Initialize slider vals if not set
+    if(!sliderVals['male_'+i])sliderVals['male_'+i]=Math.round(overallMaleRatio*100);
+    subjectKeys.forEach(k=>{if(!sliderVals['subj_'+i+'_'+k])sliderVals['subj_'+i+'_'+k]=Math.round(overallSubjAvg[k])});
+    if(!sliderVals['total_'+i])sliderVals['total_'+i]=Math.round(overallTotalAvg);
+    if(!sliderVals['ntpct_'+i])sliderVals['ntpct_'+i]=overallNtPct;
+
+    const maleVal=sliderVals['male_'+i];
+    const ntPctVal=sliderVals['ntpct_'+i];
+    const totalVal=sliderVals['total_'+i];
+    const subjInputs=subjectKeys.map(k=>{
+      const sv=sliderVals['subj_'+i+'_'+k];
+      const sk=k;
+      return '<td><div class="slider-cell">'
+        +'<input type="range" min="'+Math.floor(minSubj[sk])+'" max="'+Math.ceil(maxSubj[sk])+'" step="1" value="'+sv+'" oninput="sliderVals[\'subj_'+i+'_'+sk+'\']=+this.value;delayedRun()" style="width:60px">'
+        +'<span class="sv" id="sv_subj_'+i+'_'+sk+'">'+sv+'</span>'
+        +'<span class="av" id="av_subj_'+i+'_'+sk+'"></span>'
+        +'</div></td>';
+    }).join('');
+
+    return '<tr id="'+rowId+'">'
+      +'<td class="cls-name">第'+(i+1)+'班</td>'
+      +'<td><div class="slider-cell">'
+        +'<input type="range" min="0" max="100" step="1" value="'+maleVal+'" oninput="sliderVals[\'male_'+i+'\']=+this.value;document.getElementById(\'sv_male_'+i+'\').textContent=this.value+\'%\';delayedRun()" style="width:80px">'
+        +'<span class="sv" id="sv_male_'+i+'">'+maleVal+'%</span>'
+        +'<span class="av" id="av_male_'+i+'"></span>'
+        +'</div></td>'
+      +'<td><div class="slider-cell">'
+        +'<input type="range" min="0" max="100" step="1" value="'+ntPctVal+'" oninput="sliderVals[\'ntpct_'+i+'\']=+this.value;document.getElementById(\'sv_ntpct_'+i+'\').textContent=this.value+\'%\';delayedRun()" style="width:80px">'
+        +'<span class="sv" id="sv_ntpct_'+i+'">'+ntPctVal+'%</span>'
+        +'<span class="av" id="av_ntpct_'+i+'"></span>'
+        +'</div></td>'
+      +subjInputs
+      +'<td><div class="slider-cell">'
+        +'<input type="range" min="'+Math.floor(minTotal)+'" max="'+Math.ceil(maxTotal)+'" step="1" value="'+totalVal+'" oninput="sliderVals[\'total_'+i+'\']=+this.value;document.getElementById(\'sv_total_'+i+'\').textContent=this.value;delayedRun()" style="width:80px">'
+        +'<span class="sv" id="sv_total_'+i+'">'+totalVal+'</span>'
+        +'<span class="av" id="av_total_'+i+'"></span>'
+        +'</div></td>'
+      +'</tr>';
+  }).join('');
+
+  // Run initial assignment
+  run();
+}
+function resetSliders(){
+  if(!students.length)return;
+  const n=parseInt(document.getElementById('cc').value)||7;
+  const totalMale=students.filter(s=>s.gender==='男').length;
+  const overallMaleRatio=Math.round(totalMale/students.length*100);
+ const overallTotalAvg=Math.round(students.reduce((s,st)=>s+st.totalScore,0)/students.length);
+ const overallSubjAvg={};
+  const totalNT=students.filter(s=>s.type==='积分不达标').length;
+  const overallNtPct=Math.round(totalNT/students.length*100);
+ subjectKeys.forEach(k=>{overallSubjAvg[k]=Math.round(students.reduce((s,st)=>s+st.subjects[k],0)/students.length)});
+ for(let i=0;i<n;i++){
+   sliderVals['male_'+i]=overallMaleRatio;
+    sliderVals['ntpct_'+i]=overallNtPct;
+   sliderVals['total_'+i]=overallTotalAvg;
+    subjectKeys.forEach(k=>sliderVals['subj_'+i+'_'+k]=overallSubjAvg[k]);
+  }
+  generateSliders();
+}
+
+let _timer=null;
+function delayedRun(){
+  if(_timer)clearTimeout(_timer);
+  _timer=setTimeout(()=>run(),200);
+}
+
+// ---- Algorithm ----
+function run(){
+  try{
+  if(!students.length)return;
+  const sw=document.getElementById('sliderWrap');
+  if(!sw||sw.style.display==='none')return;
+  const n=parseInt(document.getElementById('cc').value)||7;
+  const baseSize=Math.floor(students.length/n);
+  const extraCount=students.length%n;
+  const targetSize=Array.from({length:n},(_,i)=>i<extraCount?baseSize+1:baseSize);
+
+  // Read slider targets
+  const targets=Array.from({length:n},(_,i)=>{
+    const malePct=+(sliderVals['male_'+i]||50);
+    const totalAvg=+(sliderVals['total_'+i]||200);
+    const subjAvg={};
+    subjectKeys.forEach(k=>{subjAvg[k]=+(sliderVals['subj_'+i+'_'+k]||80)});
+    return{
+     male:Math.round(targetSize[i]*malePct/100),
+     totalSum:targetSize[i]*totalAvg,
+      ntCount:Math.round(targetSize[i]*(+(sliderVals['ntpct_'+i]||50))/100),
+     subjSum:{},
+      maxSize:targetSize[i]
+    };
+  });
+  subjectKeys.forEach(k=>targets.forEach((t,i)=>t.subjSum[k]=targetSize[i]*(sliderVals['subj_'+i+'_'+k]||80)));
+
+
+  const sorted=[...students].sort((a,b)=>b.totalScore-a.totalScore);
+
+  const classes=Array.from({length:n},(_,i)=>({
+    id:i+1,name:'第'+(i+1)+'班',
+    students:[],totalScore:0,subjSums:{},
+    genderCount:{男:0,女:0},typeCount:{},
+    maxSize:targetSize[i],targetMale:targets[i].male
+  }));
+  subjectKeys.forEach(k=>classes.forEach(c=>c.subjSums[k]=0));
+
+  for(const student of sorted){
+    let bestCi=-1,bestScore=-Infinity;
+    for(let ci=0;ci<n;ci++){
+      const cls=classes[ci];
+      const sz=cls.students.length;
+      if(sz>=cls.maxSize)continue;
+
+      // Hard gender constraint from slider target
+      if(student.gender==='男'&&(cls.genderCount['男']||0)>=cls.targetMale)continue;
+      if(student.gender==='女'&&sz-(cls.genderCount['男']||0)>=(cls.maxSize-cls.targetMale))continue;
+
+      // Target matching score
+      const tgt=targets[ci];
+      let score=0;
+
+      // Gender match (normalized)
+      const maleNeed=tgt.male-(cls.genderCount['男']||0);
+      if(student.gender==='男')score+=maleNeed;
+      else score-=(tgt.male-(cls.genderCount['男']||0));
+
+      // 积分不达标 match
+      const ntNeed=tgt.ntCount-(cls.typeCount['积分不达标']||0);
+      if(student.type==='积分不达标')score+=ntNeed;
+      else score-=ntNeed;
+
+      // Total score match
+      const totalNeed=tgt.totalSum-cls.totalScore;
+      score+=totalNeed*student.totalScore/10000;
+
+      // Subject score match
+      subjectKeys.forEach(k=>{
+        const subjNeed=tgt.subjSum[k]-cls.subjSums[k];
+        score+=subjNeed*student.subjects[k]/10000;
+      });
+
+      // Empty class bonus
+      if(sz===0)score+=100;
+
+  if(score>bestScore){bestScore=score;bestCi=ci}
+    }
+    if(bestCi===-1){for(let ci=0;ci<n;ci++){if(classes[ci].students.length<classes[ci].maxSize){bestCi=ci;break}}}
+    if(bestCi===-1){bestCi=0}
+    const cls=classes[bestCi];
+    cls.students.push(student);
+    cls.totalScore+=student.totalScore;
+    subjectKeys.forEach(k=>cls.subjSums[k]+=student.subjects[k]);
+    if(student.gender==='男'||student.gender==='女')cls.genderCount[student.gender]=(cls.genderCount[student.gender]||0)+1;
+    if(TYPE_NAMES.includes(student.type))cls.typeCount[student.type]=(cls.typeCount[student.type]||0)+1;
+  }
+
+  classes.forEach(c=>c.students.sort((a,b)=>b.totalScore-a.totalScore));
+  result=classes.map(cls=>{
+    const sz=cls.students.length||1;
+    const avgTotal=cls.totalScore/sz;
+    const avgSubj={};
+    subjectKeys.forEach(k=>avgSubj[k]=cls.subjSums[k]/sz);
+    const totalG=(cls.genderCount['男']||0)+(cls.genderCount['女']||0);
+    const malePct=totalG?(cls.genderCount['男']||0)/totalG*100:0;
+    return{...cls,avgTotal,avgSubj,malePct,totalG};
+  });
+
+  render(result);
+  document.getElementById('rp').style.display='block';
+  }catch(e){alert('分班出错：'+e.message);console.error(e)}
+}
+// ---- Render ----
+function render(classes){
+  const total=classes.reduce((s,c)=>s+c.students.length,0);
+  const avgTotal=classes.reduce((s,c)=>s+c.avgTotal,0)/classes.length;
+  const maxAvg=Math.max(...classes.map(c=>c.avgTotal));
+  const minAvg=Math.min(...classes.map(c=>c.avgTotal));
+  const diff=maxAvg-minAvg;
+  const maxN=Math.max(...classes.map(c=>c.students.length));
+  const minN=Math.min(...classes.map(c=>c.students.length));
+
+  document.getElementById('os').innerHTML=[
+    '<div class="stat-c"><div class="v">'+classes.length+'</div><div class="l">班级数</div></div>',
+    '<div class="stat-c"><div class="v">'+total+'</div><div class="l">总人数</div></div>',
+    '<div class="stat-c"><div class="v">'+avgTotal.toFixed(1)+'</div><div class="l">总平均分</div></div>',
+    '<div class="stat-c"><div class="v" style="color:'+(diff>1?'#dc2626':'#16a34a')+'">'+diff.toFixed(2)+'</div><div class="l">平均分极差</div></div>',
+    '<div class="stat-c"><div class="v" style="color:'+(maxN-minN>2?'#ea580c':'#16a34a')+'">'+(maxN-minN)+'</div><div class="l">人数极差</div></div>',
+    '<div class="stat-c"><div class="v">'+maxAvg.toFixed(1)+'/'+minAvg.toFixed(1)+'</div><div class="l">最高/最低均分</div></div>'
+  ].join('');
+
+  drawBar('chartTotal',classes.map(c=>({label:c.name,value:c.avgTotal,unit:''})),'#3b82f6');
+  drawBar('chartCount',classes.map(c=>({label:c.name,value:c.students.length,unit:'人'})),'#6366f1');
+
+  const subjCont=document.getElementById('subjChartContainer');
+  subjCont.innerHTML=subjectKeys.map(sk=>{
+    const vals=classes.map(c=>({label:c.name,value:c.avgSubj[sk]||0,unit:''}));
+    const maxV=Math.max(...vals.map(v=>v.value)),minV=Math.min(...vals.map(v=>v.value)),sd=maxV-minV;
+    return '<div class="cls-c"><div style="font-size:12px;font-weight:600;margin-bottom:6px">'+sk+' 平均分'+(sd<=1?' ✓均衡':' 极差'+sd.toFixed(1))+'</div><div id="sc_'+sk+'"></div></div>';
+  }).join('');
+  subjectKeys.forEach(sk=>{
+    const vals=classes.map(c=>({label:c.name,value:c.avgSubj[sk]||0,unit:''}));
+    const el=document.getElementById('sc_'+sk);if(el)drawBarIn(el,vals,'#0891b2');
+  });
+
+  document.getElementById('cts').innerHTML=classes.map(c=>'<div class="tab'+(c.id===1?' active':'')+'" onclick="switchTab('+(c.id-1)+')">'+c.name+'</div>').join('');
+
+  document.getElementById('ccontent').innerHTML=classes.map((cls,idx)=>{
+    const cols=4+subjectKeys.length;
+    return '<div class="tab-c'+(idx===0?' active':'')+'" id="tc'+idx+'">'+
+      '<div class="cls-st" style="grid-template-columns:repeat('+cols+',1fr)">'+
+      '<span>人数<strong>'+cls.students.length+'</strong></span>'+
+      '<span>均分<strong>'+cls.avgTotal.toFixed(2)+'</strong></span>'+
+      '<span>男生<strong>'+cls.malePct.toFixed(1)+'%</strong></span>'+
+      '<span>'+TYPE_NAMES.map(t=>t.substring(0,2)+' '+(cls.typeCount[t]||0)).join(' ')+'</span>'+
+      subjectKeys.map(sk=>'<span>'+sk+'<strong>'+(cls.avgSubj[sk]||0).toFixed(1)+'</strong></span>').join('')+
+      '</div>'+
+      '<div class="table-wrap"><table class="dt"><thead><tr><th>#</th><th>姓名</th>'+
+      subjectKeys.map(k=>'<th>'+k+'</th>').join('')+
+      '<th>总分</th><th>性别</th><th>人员类型</th></tr></thead><tbody>'+
+      cls.students.map((s,i)=>{
+        const tb={'本市':'badge badge-b','积分达标':'badge badge-g','积分不达标':'badge badge-o'}[s.type]||'';
+        return '<tr><td>'+(i+1)+'</td><td>'+s.name+'</td>'+
+          subjectKeys.map(k=>'<td>'+s.subjects[k].toFixed(1)+'</td>').join('')+
+          '<td><strong>'+s.totalScore.toFixed(1)+'</strong></td><td>'+s.gender+'</td>'+
+          '<td>'+(tb?'<span class="'+tb+'">'+s.type+'</span>':s.type)+'</td></tr>';
+      }).join('')+
+      '</tbody></table></div></div>';
+  }).join('');
+
+  // Update slider actual values
+  updateSliderActuals(classes);
+}
+
+function updateSliderActuals(classes){
+  const n=classes.length;
+  for(let i=0;i<n;i++){
+    // Male actual
+    const malePct=Math.round(classes[i].malePct);
+    const avMale=document.getElementById('av_male_'+i);
+    if(avMale)avMale.textContent='→'+malePct+'%';
+
+    // Total avg actual
+    const totalAct=Math.round(classes[i].avgTotal);
+   const avTotal=document.getElementById('av_total_'+i);
+   if(avTotal)avTotal.textContent='→'+totalAct;
+
+    // 积分不达标% actual
+    const ntCt=classes[i].typeCount['积分不达标']||0;
+    const ntAct=Math.round(ntCt/classes[i].students.length*100);
+    const avNt=document.getElementById('av_ntpct_'+i);
+    if(avNt)avNt.textContent='→'+ntAct+'%';
+
+   // Subject actuals
+    subjectKeys.forEach(k=>{
+      const act=Math.round(classes[i].avgSubj[k]||0);
+      const el=document.getElementById('av_subj_'+i+'_'+k);
+      if(el)el.textContent='→'+act;
+    });
+  }
+}
+
+function drawBar(id,items,color){
+  const max=Math.max(...items.map(x=>x.value),0.01);
+  const min=Math.min(...items.map(x=>x.value)),r=max-min||1;
+  const el=document.getElementById(id);if(!el)return;
+  el.innerHTML='<div class="bar-c">'+items.map(x=>{
+    const w=((x.value-min+r*0.15)/(max+r*0.15))*100;
+    return '<div class="bar-r"><div class="bar-l">'+x.label+'</div><div class="bar-t"><div class="bar-f" style="width:'+Math.max(w,3)+'%;background:'+color+'"></div></div><div class="bar-v">'+x.value.toFixed(2)+x.unit+'</div></div>';
+  }).join('')+'</div>';
+}
+
+function drawBarIn(c,items,color){
+  const max=Math.max(...items.map(x=>x.value),0.01);
+  const min=Math.min(...items.map(x=>x.value)),r=max-min||1;
+  c.innerHTML='<div class="bar-c">'+items.map(x=>{
+    const w=((x.value-min+r*0.15)/(max+r*0.15))*100;
+    return '<div class="bar-r"><div class="bar-l" style="width:40px">'+x.label+'</div><div class="bar-t"><div class="bar-f" style="width:'+Math.max(w,3)+'%;background:'+color+'"></div></div><div class="bar-v">'+x.value.toFixed(1)+'</div></div>';
+  }).join('')+'</div>';
+}
+
+function switchTab(idx){
+  document.querySelectorAll('#cts .tab').forEach((t,i)=>t.classList.toggle('active',i===idx));
+  document.querySelectorAll('#ccontent .tab-c').forEach((tc,i)=>tc.classList.toggle('active',i===idx));
+}
+
+// ---- Export ----
+function exportXLSX(){
+  if(!result)return;
+  const detail=result.flatMap(cls=>
+    cls.students.map((s,i)=>{
+      const row={班级:cls.name,序号:i+1,姓名:s.name};
+      subjectKeys.forEach(k=>row[k]=s.subjects[k]);
+      row['总分']=s.totalScore;row['性别']=s.gender;row['人员类型']=s.type;
+      return row;
+    })
+  );
+  const summary=result.map(cls=>{
+    const row={班级:cls.name,人数:cls.students.length,总分平均分:cls.avgTotal.toFixed(2)};
+    subjectKeys.forEach(k=>row[k+'平均分']=(cls.avgSubj[k]||0).toFixed(2));
+    row['男生']=cls.genderCount['男']||0;row['女生']=cls.genderCount['女']||0;
+    row['男生比例']=cls.malePct.toFixed(1)+'%';
+    TYPE_NAMES.forEach(t=>row[t+'人数']=cls.typeCount[t]||0);
+    return row;
+  });
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(detail),'分班详情');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(summary),'汇总统计');
+  XLSX.writeFile(wb,'均衡分班结果.xlsx');
+}
+</script>
+</body>
+</html>
